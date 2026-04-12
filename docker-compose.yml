@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: fitness_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: fitness_tracker
+    volumes:
+      - mongo_data:/data/db
+      - ./data.js:/docker-entrypoint-initdb.d/01_data.js:ro
+      - ./validation.js:/docker-entrypoint-initdb.d/02_validation.js:ro
+    networks:
+      - fitness_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build: .
+    container_name: fitness_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/fitness_tracker
+      - PORT=8080
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - fitness_net
+
+volumes:
+  mongo_data:
+
+networks:
+  fitness_net:
+    driver: bridge
