@@ -221,4 +221,4 @@ docker compose up --build
 
 ## 👨‍💻 Автор
 
-Kasem Alkhalaf
+**Альхалаф Касем**
