@@ -1,264 +1,238 @@
-// queries.js — MongoDB запросы для фитнес-трекера
+// queries.js — MongoDB CRUD-запросы для Fitness Tracker
 // Запуск: mongosh fitness_tracker queries.js
 
-// ════════════════════════════════════════════════════════════════════
-// CREATE — Вставка документов
-// ════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// CREATE
+// ═══════════════════════════════════════════════════════════════
 
 // 1. Создание нового пользователя
 db.users.insertOne({
-  login: "new_user_2024",
-  firstName: "Сергей",
-  lastName: "Морозов",
-  email: "sergey.morozov@example.com",
-  passwordHash: "$2b$10$newhash",
-  age: 27,
-  weight: 75,
-  height: 178,
-  goal: "muscle_gain",
-  createdAt: new Date(),
-  updatedAt: new Date()
+  login: "new_user",
+  first_name: "New",
+  last_name: "User",
+  email: "new.user@example.com",
+  age: 24,
+  weight_kg: 70.0,
+  height_cm: 172,
+  created_at: new Date(),
 });
 
-// 2. Создание нового упражнения
+// 2. Создание упражнения
 db.exercises.insertOne({
-  name: "Тяга верхнего блока",
+  name: "Dumbbell Curl",
   category: "strength",
-  muscleGroups: ["back", "biceps", "lats"],
-  description: "Упражнение для широчайших мышц спины",
-  unit: "reps",
-  defaultSets: 3,
-  defaultReps: 12,
-  createdAt: new Date()
+  muscle_groups: ["biceps", "forearms"],
+  description: "Isolation exercise for the biceps using dumbbells.",
+  equipment: "dumbbells",
+  difficulty: "beginner",
+  created_at: new Date(),
 });
 
 // 3. Создание тренировки
-const userId = db.users.findOne({ login: "ivan_petrov" })._id;
-const squatId = db.exercises.findOne({ name: "Приседания" })._id;
-const deadliftId = db.exercises.findOne({ name: "Становая тяга" })._id;
-
+const userId = db.users.findOne({ login: "john_doe" })._id;
+const squatId = db.exercises.findOne({ name: "Barbell Squat" })._id;
 db.workouts.insertOne({
-  userId: userId,
-  title: "Силовая тренировка",
-  date: new Date(),
-  durationMinutes: 65,
-  notes: "Новая тренировка",
+  user_id: userId,
+  title: "New Workout",
+  date: new Date("2024-04-10"),
+  duration_minutes: 45,
+  notes: "Light recovery",
   exercises: [
-    { exerciseId: squatId, sets: 4, reps: 10, weight: 90, completed: false },
-    { exerciseId: deadliftId, sets: 3, reps: 6, weight: 110, completed: false }
+    {
+      exercise_id: squatId,
+      exercise_name: "Barbell Squat",
+      sets: 3,
+      reps: 10,
+      weight_kg: 80,
+      duration_seconds: null,
+      order: 1,
+    },
   ],
-  totalCaloriesBurned: 0,
-  createdAt: new Date()
+  created_at: new Date(),
 });
 
-// ════════════════════════════════════════════════════════════════════
-// READ — Поиск документов
-// ════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// READ
+// ═══════════════════════════════════════════════════════════════
 
-// 4. Поиск пользователя по логину (точное совпадение)
-db.users.findOne({ login: "ivan_petrov" });
+// 4. Поиск пользователя по логину ($eq)
+db.users.findOne({ login: { $eq: "john_doe" } });
 
-// 5. Поиск пользователей по маске имени и фамилии (regex)
-db.users.find({
-  $or: [
-    { firstName: { $regex: "Ив", $options: "i" } },
-    { lastName: { $regex: "Пет", $options: "i" } }
-  ]
-});
-
-// 6. Поиск по маске полного имени (firstName + lastName)
+// 5. Поиск пользователя по маске имени и фамилии ($regex, $and)
 db.users.find({
   $and: [
-    { firstName: { $regex: "^М", $options: "i" } },
-    { lastName: { $regex: "а$", $options: "i" } }
-  ]
+    { first_name: { $regex: "Jo", $options: "i" } },
+    { last_name: { $regex: "D", $options: "i" } },
+  ],
 });
 
-// 7. Получение всех упражнений
+// 6. Получение списка всех упражнений
 db.exercises.find({}).sort({ name: 1 });
 
-// 8. Упражнения по категории
-db.exercises.find({ category: { $in: ["strength", "cardio"] } });
+// 7. Получение упражнений по категории ($in)
+db.exercises.find({ category: { $in: ["cardio", "balance"] } });
+
+// 8. Пользователи с возрастом больше 30 ($gt)
+db.users.find({ age: { $gt: 30 } });
 
 // 9. История тренировок пользователя (сортировка по дате)
-db.workouts.find(
-  { userId: db.users.findOne({ login: "ivan_petrov" })._id },
-  { title: 1, date: 1, durationMinutes: 1, totalCaloriesBurned: 1 }
-).sort({ date: -1 });
+const uid = db.users.findOne({ login: "john_doe" })._id;
+db.workouts.find({ user_id: uid }).sort({ date: -1 });
 
-// 10. Тренировки за период (статистика)
-const periodStart = new Date("2024-03-01");
-const periodEnd   = new Date("2024-03-31");
-
+// 10. Тренировки за период ($gte, $lte)
 db.workouts.find({
-  userId: db.users.findOne({ login: "ivan_petrov" })._id,
-  date: { $gte: periodStart, $lte: periodEnd }
-}).sort({ date: 1 });
-
-// 11. Тренировки длиннее 60 минут
-db.workouts.find({ durationMinutes: { $gt: 60 } });
-
-// 12. Тренировки, где есть конкретное упражнение
-db.workouts.find({
-  "exercises.exerciseId": db.exercises.findOne({ name: "Приседания" })._id
+  user_id: uid,
+  date: {
+    $gte: new Date("2024-04-01"),
+    $lte: new Date("2024-04-30"),
+  },
 });
 
-// 13. Тренировки, где сожжено более 400 калорий
-db.workouts.find({ totalCaloriesBurned: { $gt: 400 } });
+// 11. Тренировки длительностью более 50 минут ($gt)
+db.workouts.find({ duration_minutes: { $gt: 50 } });
 
-// ════════════════════════════════════════════════════════════════════
-// UPDATE — Обновление документов
-// ════════════════════════════════════════════════════════════════════
+// 12. Тренировки с конкретным упражнением (поиск в массиве)
+const benchId = db.exercises.findOne({ name: "Bench Press" })._id;
+db.workouts.find({ "exercises.exercise_id": benchId });
 
-// 14. Обновление веса пользователя
+// 13. Пользователи НЕ из определённого возраста ($ne, $nin)
+db.users.find({ age: { $nin: [22, 25, 28] } });
+
+// 14. Сложный OR: упражнения для ног или спины ($or, $in)
+db.exercises.find({
+  $or: [
+    { muscle_groups: { $in: ["legs", "quadriceps"] } },
+    { muscle_groups: { $in: ["back"] } },
+  ],
+});
+
+// ═══════════════════════════════════════════════════════════════
+// UPDATE
+// ═══════════════════════════════════════════════════════════════
+
+// 15. Обновление данных пользователя ($set)
 db.users.updateOne(
-  { login: "ivan_petrov" },
-  {
-    $set: { weight: 82, updatedAt: new Date() }
-  }
+  { login: "john_doe" },
+  { $set: { weight_kg: 81.0, age: 29 } }
 );
 
-// 15. Добавление упражнения в тренировку ($push)
-const workoutId = db.workouts.findOne(
-  { userId: db.users.findOne({ login: "ivan_petrov" })._id, title: "Грудь и трицепс" }
-)._id;
-
+// 16. Добавление упражнения в существующую тренировку ($push)
+const workoutId = db.workouts.findOne({ title: "Leg Day" })._id;
+const lungesId = db.exercises.findOne({ name: "Lunges" })._id;
 db.workouts.updateOne(
   { _id: workoutId },
   {
     $push: {
       exercises: {
-        exerciseId: db.exercises.findOne({ name: "Тяга верхнего блока" })._id,
+        exercise_id: lungesId,
+        exercise_name: "Lunges",
         sets: 3,
-        reps: 12,
-        weight: 50,
-        completed: false
-      }
-    }
+        reps: 15,
+        weight_kg: 0,
+        duration_seconds: null,
+        order: 3,
+      },
+    },
   }
 );
 
-// 16. Отметить упражнение выполненным ($set в массиве)
-db.workouts.updateOne(
-  { _id: workoutId, "exercises.exerciseId": squatId },
-  { $set: { "exercises.$.completed": true } }
-);
-
-// 17. Обновить калории и пульс тренировки
+// 17. Удаление упражнения из тренировки ($pull)
 db.workouts.updateOne(
   { _id: workoutId },
-  { $set: { totalCaloriesBurned: 420, heartRateAvg: 138 } }
+  { $pull: { exercises: { exercise_name: "Lunges" } } }
 );
 
-// 18. Добавить группу мышц к упражнению ($addToSet — без дублей)
+// 18. Увеличение продолжительности тренировки ($inc)
+db.workouts.updateOne({ _id: workoutId }, { $inc: { duration_minutes: 5 } });
+
+// 19. Обновление нескольких документов ($set + updateMany)
+db.workouts.updateMany(
+  { duration_minutes: { $lt: 30 } },
+  { $set: { notes: "Short session" } }
+);
+
+// 20. Добавить тег если ещё нет ($addToSet)
 db.exercises.updateOne(
-  { name: "Планка" },
-  { $addToSet: { muscleGroups: "glutes" } }
+  { name: "Push-Up" },
+  { $addToSet: { muscle_groups: "core" } }
 );
 
-// 19. Удалить группу мышц ($pull)
-db.exercises.updateOne(
-  { name: "Планка" },
-  { $pull: { muscleGroups: "glutes" } }
-);
+// ═══════════════════════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════════════════════
 
-// 20. Массовое обновление — увеличить defaultReps на 2 для всех силовых
-db.exercises.updateMany(
-  { category: "strength" },
-  { $inc: { defaultReps: 2 } }
-);
+// 21. Удаление пользователя по логину
+db.users.deleteOne({ login: "new_user" });
 
-// ════════════════════════════════════════════════════════════════════
-// DELETE — Удаление документов
-// ════════════════════════════════════════════════════════════════════
-
-// 21. Удаление тестового пользователя
-db.users.deleteOne({ login: "new_user_2024" });
-
-// 22. Удаление тренировок пользователя старше определённой даты
+// 22. Удаление тренировок пользователя за период
 db.workouts.deleteMany({
-  userId: db.users.findOne({ login: "dmitry_vol" })._id,
-  date: { $lt: new Date("2024-01-01") }
+  user_id: uid,
+  date: { $lt: new Date("2024-01-01") },
 });
 
-// 23. Удалить упражнение из тренировки ($pull из массива)
-db.workouts.updateOne(
-  { _id: workoutId },
-  {
-    $pull: {
-      exercises: {
-        exerciseId: db.exercises.findOne({ name: "Тяга верхнего блока" })._id
-      }
-    }
-  }
-);
+// 23. Удаление упражнения по имени
+db.exercises.deleteOne({ name: "Dumbbell Curl" });
 
-// ════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // AGGREGATION — Статистика тренировок за период
-// ════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
-// 24. Статистика тренировок за март 2024
+// 24. Статистика тренировок пользователя за апрель 2024
 db.workouts.aggregate([
-  // Фильтр по пользователю и периоду
+  // Фильтрация по пользователю и периоду
   {
     $match: {
-      userId: db.users.findOne({ login: "ivan_petrov" })._id,
-      date: { $gte: new Date("2024-03-01"), $lte: new Date("2024-03-31") }
-    }
+      user_id: uid,
+      date: {
+        $gte: new Date("2024-04-01"),
+        $lte: new Date("2024-04-30"),
+      },
+    },
   },
-  // Группировка — итоги
+  // Разворачиваем массив упражнений
+  { $unwind: "$exercises" },
+  // Группируем и считаем метрики
   {
     $group: {
-      _id: "$userId",
-      totalWorkouts: { $sum: 1 },
-      totalMinutes: { $sum: "$durationMinutes" },
-      totalCalories: { $sum: "$totalCaloriesBurned" },
-      avgDuration: { $avg: "$durationMinutes" },
-      avgHeartRate: { $avg: "$heartRateAvg" }
-    }
+      _id: "$user_id",
+      total_workouts: { $sum: 1 },
+      total_duration_minutes: { $sum: "$duration_minutes" },
+      avg_duration_minutes: { $avg: "$duration_minutes" },
+      total_sets: { $sum: "$exercises.sets" },
+      unique_exercises: { $addToSet: "$exercises.exercise_name" },
+    },
   },
-  // Форматирование вывода
+  // Формируем итоговый документ
   {
     $project: {
       _id: 0,
-      totalWorkouts: 1,
-      totalMinutes: 1,
-      totalCalories: 1,
-      avgDuration: { $round: ["$avgDuration", 1] },
-      avgHeartRate: { $round: ["$avgHeartRate", 0] }
-    }
-  }
+      total_workouts: 1,
+      total_duration_minutes: 1,
+      avg_duration_minutes: { $round: ["$avg_duration_minutes", 1] },
+      total_sets: 1,
+      unique_exercise_count: { $size: "$unique_exercises" },
+    },
+  },
 ]);
 
-// 25. Топ упражнений по количеству выполнений (для всех пользователей)
+// 25. Топ упражнений по количеству использований
 db.workouts.aggregate([
   { $unwind: "$exercises" },
   {
     $group: {
-      _id: "$exercises.exerciseId",
-      timesPerformed: { $sum: 1 },
-      avgWeight: { $avg: "$exercises.weight" }
-    }
+      _id: "$exercises.exercise_name",
+      usage_count: { $sum: 1 },
+      avg_sets: { $avg: "$exercises.sets" },
+    },
   },
-  {
-    $lookup: {
-      from: "exercises",
-      localField: "_id",
-      foreignField: "_id",
-      as: "exerciseInfo"
-    }
-  },
-  { $unwind: "$exerciseInfo" },
+  { $sort: { usage_count: -1 } },
+  { $limit: 5 },
   {
     $project: {
+      exercise_name: "$_id",
       _id: 0,
-      exerciseName: "$exerciseInfo.name",
-      category: "$exerciseInfo.category",
-      timesPerformed: 1,
-      avgWeight: { $round: ["$avgWeight", 1] }
-    }
+      usage_count: 1,
+      avg_sets: { $round: ["$avg_sets", 1] },
+    },
   },
-  { $sort: { timesPerformed: -1 } }
 ]);
-
-print("✅ Все запросы выполнены успешно!");

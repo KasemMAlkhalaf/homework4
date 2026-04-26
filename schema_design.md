@@ -1,109 +1,100 @@
-# Schema Design: Фитнес-трекер (MongoDB)
+# Schema Design: Fitness Tracker (MongoDB)
 
-## Обзор системы
+## Сущности системы
 
-Система фитнес-трекера содержит три основные сущности:
-- **User** (Пользователь)
-- **Exercise** (Упражнение)
-- **Workout** (Тренировка)
+Система содержит три основные сущности: **User**, **Exercise**, **Workout**.
 
 ---
 
 ## Коллекции и структура документов
 
-### 1. Коллекция `users`
+### 1. `users`
 
 ```json
 {
   "_id": ObjectId,
   "login": "string (unique)",
-  "firstName": "string",
-  "lastName": "string",
+  "first_name": "string",
+  "last_name": "string",
   "email": "string",
-  "passwordHash": "string",
   "age": "number",
-  "weight": "number (kg)",
-  "height": "number (cm)",
-  "goal": "string (enum: weight_loss | muscle_gain | endurance | flexibility)",
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "weight_kg": "number",
+  "height_cm": "number",
+  "created_at": "Date"
 }
 ```
 
-**Почему не embedded тренировки/упражнения?**
-Тренировки могут исчисляться сотнями — хранить их внутри пользователя привело бы к
-разрастанию документа свыше лимита MongoDB (16 MB). Используем **references**.
-
----
-
-### 2. Коллекция `exercises`
+### 2. `exercises`
 
 ```json
 {
   "_id": ObjectId,
   "name": "string (unique)",
-  "category": "string (enum: cardio | strength | flexibility | balance)",
-  "muscleGroups": ["string"],
+  "category": "string (cardio|strength|flexibility|balance)",
+  "muscle_groups": ["string"],
   "description": "string",
-  "unit": "string (enum: reps | seconds | meters)",
-  "defaultSets": "number",
-  "defaultReps": "number",
-  "createdAt": "Date"
+  "equipment": "string",
+  "difficulty": "string (beginner|intermediate|advanced)",
+  "created_at": "Date"
 }
 ```
 
-**Почему отдельная коллекция?**
-Упражнения — это справочник (catalog), общий для всех пользователей.
-Дублировать их в каждой тренировке нецелесообразно → **reference** из тренировки.
-
----
-
-### 3. Коллекция `workouts`
+### 3. `workouts`
 
 ```json
 {
   "_id": ObjectId,
-  "userId": "ObjectId → users._id",
+  "user_id": ObjectId,
   "title": "string",
   "date": "Date",
-  "durationMinutes": "number",
+  "duration_minutes": "number",
   "notes": "string",
   "exercises": [
     {
-      "exerciseId": "ObjectId → exercises._id",
+      "exercise_id": ObjectId,
+      "exercise_name": "string",
       "sets": "number",
       "reps": "number",
-      "weight": "number (kg, optional)",
-      "duration": "number (seconds, optional)",
-      "distance": "number (meters, optional)",
-      "completed": "boolean"
+      "weight_kg": "number",
+      "duration_seconds": "number",
+      "order": "number"
     }
   ],
-  "totalCaloriesBurned": "number",
-  "heartRateAvg": "number (optional)",
-  "createdAt": "Date"
+  "created_at": "Date"
 }
 ```
 
-**Почему `exercises` — embedded array внутри workout?**
-
-Набор упражнений в тренировке — это **денормализованная копия** конкретного выполнения.
-Данные выполнения (sets, reps, weight) уникальны для каждой сессии и не меняются после
-записи. Загрузка тренировки требует сразу все её упражнения → embedded оптимален.
-
-При этом `exerciseId` сохраняется как reference, чтобы можно было получить мета-данные
-упражнения (название, категория) при необходимости через `$lookup`.
-
 ---
 
-## Сводная таблица решений Embedded vs References
+## Обоснование выбора Embedded vs References
 
-| Связь | Решение | Обоснование |
-|-------|---------|-------------|
-| User → Workouts | **Reference** (userId в workout) | Неограниченный рост, нужна пагинация истории |
-| Workout → ExerciseSet | **Embedded** (массив в workout) | Данные выполнения — часть тренировки, всегда читаются вместе |
-| ExerciseSet → Exercise | **Reference** (exerciseId) | Упражнение — справочник, данные могут обновляться |
-| User → Exercises | **Reference** (через workout) | Упражнения глобальные, не принадлежат пользователю |
+### `workouts.exercises` — **Embedded documents** ✅
+
+**Причины:**
+- Упражнения внутри тренировки — это *снимок данных на момент тренировки*. Если
+  упражнение изменится (описание, категория), история тренировок не должна меняться.
+- Данные всегда читаются вместе: при получении тренировки нужны все её упражнения.
+- Нет необходимости в независимом запросе к упражнениям внутри тренировки.
+- Количество упражнений в тренировке ограничено (обычно 5–20), документ не вырастет бесконтрольно.
+
+**Что дополнительно хранится в embedded-документе:**
+- `exercise_name` — денормализованное имя для быстрого отображения без JOIN.
+- `exercise_id` — ссылка на оригинальное упражнение для возможности lookup при необходимости.
+
+### `workouts.user_id` — **Reference (DBRef)** ✅
+
+**Причины:**
+- Пользователь может иметь сотни тренировок; встраивание всех тренировок в документ
+  пользователя приведёт к документу, превышающему лимит MongoDB в 16 МБ.
+- Тренировки часто запрашиваются независимо (история, статистика).
+- При обновлении данных пользователя не нужно обновлять все его тренировки.
+
+### `exercises` — **Отдельная коллекция** ✅
+
+**Причины:**
+- Упражнения — справочник, используемый при создании тренировок.
+- Список упражнений нужно получать независимо (каталог упражнений).
+- Одно упражнение используется в множестве тренировок разных пользователей.
 
 ---
 
@@ -111,14 +102,15 @@
 
 ```javascript
 // users
-db.users.createIndex({ login: 1 }, { unique: true });
-db.users.createIndex({ firstName: 1, lastName: 1 });
+db.users.createIndex({ login: 1 }, { unique: true })
+db.users.createIndex({ first_name: 1, last_name: 1 })
 
 // exercises
-db.exercises.createIndex({ name: 1 }, { unique: true });
-db.exercises.createIndex({ category: 1 });
+db.exercises.createIndex({ name: 1 }, { unique: true })
+db.exercises.createIndex({ category: 1 })
 
 // workouts
-db.workouts.createIndex({ userId: 1, date: -1 });
-db.workouts.createIndex({ userId: 1, date: -1, "exercises.exerciseId": 1 });
+db.workouts.createIndex({ user_id: 1 })
+db.workouts.createIndex({ user_id: 1, date: -1 })
+db.workouts.createIndex({ date: 1 })
 ```

@@ -1,163 +1,359 @@
-# Фитнес-трекер — Домашнее задание 04
+# Fitness Tracker — Домашнее задание 04
 
-API сервис для отслеживания тренировок, построенный на **Go** + **MongoDB**.
+**Вариант 14 — Фитнес-трекер**  
+Стек: Python · FastAPI · MongoDB · Motor · Docker
+
+---
 
 ## Структура проекта
 
 ```
-.
-├── cmd/api/main.go       # Исходный код API
-├── data.js               # Тестовые данные (seed)
-├── validation.js         # Валидация схем MongoDB
-├── queries.js            # Примеры CRUD запросов
-├── schema_design.md      # Документация по проектированию БД
-├── go.mod                # Go модуль
-├── Dockerfile            # Сборка API
-└── docker-compose.yml    # Запуск всего стека
+fitness-tracker/
+├── app/
+│   ├── main.py            # FastAPI приложение
+│   ├── requirements.txt
+│   └── Dockerfile
+├── schema_design.md       # Документная модель + обоснование embedded/references
+├── data.js                # Тестовые данные (10+ документов в каждой коллекции)
+├── queries.js             # CRUD запросы + агрегации
+├── validation.js          # JSON Schema валидация + тесты
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
-## Запуск
+## Быстрый старт
 
-### Вариант 1: Docker Compose (рекомендуется)
+### 1. Запуск через Docker Compose
 
 ```bash
-# Запуск MongoDB + API
-docker compose up -d
-
-# Проверка логов
-docker compose logs -f api
-
-# Остановка
-docker compose down
+docker compose up --build
 ```
 
-MongoDB будет доступна на `localhost:27017`.  
-API — на `http://localhost:8080`.
+MongoDB стартует на `localhost:27017`, API — на `localhost:8000`.  
+Тестовые данные загружаются автоматически при первом запуске через `data.js`.
 
-При первом запуске MongoDB автоматически выполнит `data.js` и `validation.js`
-из директории `/docker-entrypoint-initdb.d`.
+### 2. Документация API
 
-### Вариант 2: Только MongoDB (для разработки)
+После запуска откройте: <http://localhost:8000/docs>
+
+---
+
+## Ручная загрузка данных и запросов
+
+Если MongoDB запущена отдельно:
 
 ```bash
-# Запуск только MongoDB
-docker compose up -d mongo
-
-# Заполнить БД тестовыми данными
+# Загрузить тестовые данные
 mongosh fitness_tracker data.js
 
 # Применить валидацию схем
 mongosh fitness_tracker validation.js
 
-# Запустить API локально
-MONGO_URI=mongodb://localhost:27017/fitness_tracker go run ./cmd/api
-```
-
-### Выполнение запросов из queries.js
-
-```bash
+# Выполнить примеры запросов
 mongosh fitness_tracker queries.js
 ```
 
 ---
 
-## API Эндпоинты
+## API Endpoints
 
-| Метод | Путь | Описание |
-|-------|------|----------|
+| Метод | URL | Описание |
+|-------|-----|----------|
 | `POST` | `/users` | Создание нового пользователя |
-| `GET` | `/users?login=xxx` | Поиск пользователя по логину |
-| `GET` | `/users?firstName=Ив&lastName=Пет` | Поиск по маске имя/фамилия |
-| `GET` | `/users/{id}/workouts` | История тренировок пользователя |
-| `GET` | `/users/{id}/stats?from=2024-03-01&to=2024-03-31` | Статистика за период |
+| `GET` | `/users/by-login/{login}` | Поиск пользователя по логину |
+| `GET` | `/users/search?first_name=&last_name=` | Поиск по маске имени/фамилии |
 | `POST` | `/exercises` | Создание упражнения |
-| `GET` | `/exercises` | Список всех упражнений |
-| `GET` | `/exercises?category=strength` | Упражнения по категории |
+| `GET` | `/exercises` | Список упражнений (фильтр по category, difficulty) |
 | `POST` | `/workouts` | Создание тренировки |
 | `POST` | `/workouts/{id}/exercises` | Добавление упражнения в тренировку |
+| `GET` | `/users/{id}/workouts` | История тренировок пользователя |
+| `GET` | `/users/{id}/workouts/stats?from_date=&to_date=` | Статистика тренировок за период |
+| `GET` | `/health` | Health check |
 
 ---
 
-## Примеры запросов (curl)
+## Примеры cURL
 
-### Создание пользователя
 ```bash
-curl -X POST http://localhost:8080/users \
+# Создать пользователя
+curl -X POST http://localhost:8000/users \
   -H "Content-Type: application/json" \
-  -d '{
-    "login": "john_doe",
-    "firstName": "John",
-    "lastName": "Doe",
-    "email": "john@example.com",
-    "passwordHash": "$2b$10$somehash",
-    "age": 30,
-    "weight": 75.5,
-    "height": 180.0,
-    "goal": "muscle_gain"
-  }'
-```
-![Project Screenshot](./images/post_user.png)
-### Поиск по логину
-```bash
-curl "http://localhost:8080/users?login=ivan_petrov"
-```
-![Project Screenshot](./images/search_login.png)
-### Поиск по маске имени
-```bash
-curl "http://localhost:8080/users?firstName=Ив"
-```
-![Project Screenshot](./images/search_firstname.png)
-### Создание тренировки
-```bash
-curl -X POST http://localhost:8080/workouts \
+  -d '{"login":"ivan_petrov","first_name":"Ivan","last_name":"Petrov",
+       "email":"ivan@example.com","age":27,"weight_kg":75.0,"height_cm":178}'
+
+![Создать пользователя](images/add_user.png)
+
+# Найти по логину
+curl http://localhost:8000/users/by-login/ivan_petrov
+![Найти по логину](images/get_user_by_login.png)
+
+# Найти по маске имени
+curl "http://localhost:8000/users/search?first_name=Iv&last_name=Pet"
+![Найти по маске имени](images/get_user_flname.png)
+
+# Список упражнений по категории
+curl "http://localhost:8000/exercises?category=strength"
+![Список упражнений по категории](images/category.png)
+
+# Создать упражнение
+curl -X POST http://localhost:8000/exercises \
   -H "Content-Type: application/json" \
-  -d '{
-    "userId": "<USER_OBJECT_ID>",
-    "title": "Утренняя тренировка",
-    "date": "2024-03-15T08:00:00Z",
-    "durationMinutes": 45,
-    "exercises": [
-      {
-        "exerciseId": "<EXERCISE_OBJECT_ID>",
-        "sets": 3,
-        "reps": 12,
-        "weight": 60,
-        "completed": false
-      }
-    ],
-    "totalCaloriesBurned": 300
-  }'
-```
-![Project Screenshot](./images/post_workouts.png)
-### История тренировок пользователя
-```bash
-curl "http://localhost:8080/users/<USER_ID>/workouts"
-```
-![Project Screenshot](./images/user_workouts.png)
-### Статистика за период
-```bash
-curl "http://localhost:8080/users/<USER_ID>/stats?from=2024-03-01&to=2024-03-31"
-```
-![Project Screenshot](./images/user_period_workouts.png)
----
+  -d '{"name":"Box Jump","category":"cardio","muscle_groups":["legs"],"difficulty":"intermediate"}'
+![Создать упражнение](images/add_exercises.png)
 
-## Технологии
+# История тренировок (подставьте реальный user_id)
+curl http://localhost:8000/users/<user_id>/workouts
+![История тренировок](images/workout_user_id.png)
 
-- **Go 1.22** — стандартная библиотека `net/http` с поддержкой `PathValue`
-- **MongoDB 7.0** — документная база данных
-- **mongo-driver v1.15** — официальный Go драйвер MongoDB
-- **Docker / Docker Compose** — контейнеризация
+# Статистика за период
+curl "http://localhost:8000/users/<user_id>/workouts/stats?from_date=2024-04-01T00:00:00&to_date=2024-04-30T23:59:59"
+![Статистика за период](images/get_workouts_period.png)
+```
 
 ---
 
 ## Коллекции MongoDB
 
-| Коллекция | Описание | Документов (тест) |
-|-----------|----------|-------------------|
-| `users` | Пользователи | 5 |
-| `exercises` | Справочник упражнений | 11 |
-| `workouts` | Тренировки | 11 |
+| Коллекция | Кол-во тестовых документов | Ключевые поля |
+|-----------|---------------------------|---------------|
+| `users` | 10 | login (unique), first_name, last_name, email, age |
+| `exercises` | 12 | name (unique), category, muscle_groups, difficulty |
+| `workouts` | 12 | user_id (ref), date, duration_minutes, exercises[] (embedded) |
 
-Подробнее о структуре — в файле `schema_design.md`.
+Детальное описание модели — в `schema_design.md`.
+
+---
+
+## Валидация схем
+
+Валидация реализована через `$jsonSchema` для всех трёх коллекций (`validation.js`):
+
+- **users**: обязательные поля, regex для login и email, диапазоны age/weight/height
+- **exercises**: enum для category и difficulty, минимум один muscle_group
+- **workouts**: ссылка на user, диапазон duration_minutes, вложенная валидация exercises[]
+# 🏋️ Fitness Tracker — Домашнее задание 04
+
+**Вариант 14 — Фитнес-трекер**
+**Стек:** Python · FastAPI · MongoDB · Motor · Docker
+
+---
+
+## 📌 Описание
+
+REST API для управления пользователями, упражнениями и тренировками.
+Проект построен с использованием **лучших практик моделирования MongoDB** (embedded + references).
+
+---
+
+## 🚀 Возможности
+
+* 👤 Управление пользователями (создание, поиск, фильтрация)
+* 🏋️ Каталог упражнений (категории, уровень сложности)
+* 📅 Учёт тренировок и история
+* 📊 Статистика за выбранный период
+* ✅ Валидация через JSON Schema
+* 🐳 Запуск через Docker
+
+---
+
+## 📁 Структура проекта
+
+```
+fitness-tracker/
+├── app/
+│   ├── main.py            # FastAPI приложение
+│   ├── requirements.txt
+│   └── Dockerfile
+├── schema_design.md       # Описание модели данных
+├── data.js                # Тестовые данные
+├── queries.js             # CRUD + агрегации
+├── validation.js          # JSON Schema валидация
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## ⚡ Быстрый старт
+
+### 1. Запуск через Docker
+
+```bash
+docker compose up --build
+```
+
+📍 Сервисы:
+
+* MongoDB → `localhost:27017`
+* API → `http://localhost:8000`
+
+---
+
+### 2. Документация API
+
+Откройте Swagger:
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+## 🧪 Ручной запуск (опционально)
+
+```bash
+# Загрузка тестовых данных
+mongosh fitness_tracker data.js
+
+# Применение схем валидации
+mongosh fitness_tracker validation.js
+
+# Выполнение запросов
+mongosh fitness_tracker queries.js
+```
+
+---
+
+## 🔗 API Endpoints
+
+| Метод | URL                          | Описание                   |
+| ----- | ---------------------------- | -------------------------- |
+| POST  | `/users`                     | Создать пользователя       |
+| GET   | `/users/by-login/{login}`    | Найти по логину            |
+| GET   | `/users/search`              | Поиск по имени/фамилии     |
+| POST  | `/exercises`                 | Создать упражнение         |
+| GET   | `/exercises`                 | Получить список упражнений |
+| POST  | `/workouts`                  | Создать тренировку         |
+| POST  | `/workouts/{id}/exercises`   | Добавить упражнение        |
+| GET   | `/users/{id}/workouts`       | История тренировок         |
+| GET   | `/users/{id}/workouts/stats` | Статистика                 |
+| GET   | `/health`                    | Проверка сервиса           |
+
+---
+
+## 📸 Примеры API
+
+### ➕ Создать пользователя
+
+```bash
+curl -X POST http://localhost:8000/users \
+-H "Content-Type: application/json" \
+-d '{"login":"ivan_petrov","first_name":"Ivan","last_name":"Petrov",
+"email":"ivan@example.com","age":27,"weight_kg":75.0,"height_cm":178}'
+```
+
+<img src="images/add_user.png" width="600"/>
+
+---
+
+### 🔍 Найти по логину
+
+```bash
+curl http://localhost:8000/users/by-login/ivan_petrov
+```
+
+<img src="images/get_user_by_login.png" width="600"/>
+
+---
+
+### 🔎 Поиск пользователей
+
+```bash
+curl "http://localhost:8000/users/search?first_name=Iv&last_name=Pet"
+```
+
+<img src="images/get_user_flname.png" width="600"/>
+
+---
+
+### 🏋️ Упражнения по категории
+
+```bash
+curl "http://localhost:8000/exercises?category=strength"
+```
+
+<img src="images/category.png" width="600"/>
+
+---
+
+### ➕ Создать упражнение
+
+```bash
+curl -X POST http://localhost:8000/exercises \
+-H "Content-Type: application/json" \
+-d '{"name":"Box Jump","category":"cardio","muscle_groups":["legs"],"difficulty":"intermediate"}'
+```
+
+<img src="images/add_exercises.png" width="600"/>
+
+---
+
+### 📅 История тренировок
+
+```bash
+curl http://localhost:8000/users/<user_id>/workouts
+```
+
+<img src="images/workout_user_id.png" width="600"/>
+
+---
+
+### 📊 Статистика тренировок
+
+```bash
+curl "http://localhost:8000/users/<user_id>/workouts/stats?from_date=2024-04-01T00:00:00&to_date=2024-04-30T23:59:59"
+```
+
+<img src="images/get_workouts_period.png" width="600"/>
+
+---
+
+## 🗄️ Коллекции MongoDB
+
+| Коллекция | Кол-во документов | Основные поля              |
+| --------- | ----------------- | -------------------------- |
+| users     | 10                | login, email, age          |
+| exercises | 12                | name, category, difficulty |
+| workouts  | 12                | user_id, date, exercises[] |
+
+📄 Подробнее: `schema_design.md`
+
+---
+
+## 🛡️ Валидация схем
+
+Реализована через `$jsonSchema`:
+
+* **users**
+
+  * обязательные поля
+  * проверка login и email (regex)
+  * диапазоны значений
+
+* **exercises**
+
+  * enum значения
+  * минимум 1 группа мышц
+
+* **workouts**
+
+  * ссылка на пользователя
+  * вложенная валидация exercises[]
+
+---
+
+## 🐳 Docker
+
+Запуск всего проекта:
+
+```bash
+docker compose up --build
+```
+
+---
+
+## 👨‍💻 Автор
+
+Kasem Alkhalaf

@@ -1,16 +1,13 @@
-// validation.js — Валидация схем MongoDB для фитнес-трекера
+// validation.js — JSON Schema валидация коллекций Fitness Tracker
 // Запуск: mongosh fitness_tracker validation.js
 
-// ════════════════════════════════════════════════════════════════════
-// Валидация коллекции users
-// ════════════════════════════════════════════════════════════════════
-
+// ── Users валидация ───────────────────────────────────────────────────────────
 db.runCommand({
   collMod: "users",
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["login", "firstName", "lastName", "email", "passwordHash", "goal", "createdAt"],
+      required: ["login", "first_name", "last_name", "email", "age", "created_at"],
       additionalProperties: true,
       properties: {
         login: {
@@ -18,318 +15,241 @@ db.runCommand({
           minLength: 3,
           maxLength: 50,
           pattern: "^[a-z0-9_]+$",
-          description: "Логин: только строчные буквы, цифры и подчёркивание, 3-50 символов"
+          description: "Unique login: 3-50 chars, lowercase letters, digits, underscore only",
         },
-        firstName: {
+        first_name: {
           bsonType: "string",
           minLength: 1,
           maxLength: 100,
-          description: "Имя обязательно"
+          description: "First name is required",
         },
-        lastName: {
+        last_name: {
           bsonType: "string",
           minLength: 1,
           maxLength: 100,
-          description: "Фамилия обязательна"
+          description: "Last name is required",
         },
         email: {
           bsonType: "string",
-          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-          description: "Корректный email адрес"
-        },
-        passwordHash: {
-          bsonType: "string",
-          minLength: 10,
-          description: "Хэш пароля, минимум 10 символов"
+          pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+          description: "Must be a valid email address",
         },
         age: {
           bsonType: "int",
           minimum: 10,
           maximum: 120,
-          description: "Возраст от 10 до 120 лет"
+          description: "Age must be between 10 and 120",
         },
-        weight: {
-          bsonType: "double",
+        weight_kg: {
+          bsonType: ["double", "null"],
           minimum: 20,
           maximum: 500,
-          description: "Вес в кг: от 20 до 500"
+          description: "Weight in kg (optional)",
         },
-        height: {
-          bsonType: "double",
+        height_cm: {
+          bsonType: ["int", "null"],
           minimum: 50,
           maximum: 300,
-          description: "Рост в см: от 50 до 300"
+          description: "Height in cm (optional)",
         },
-        goal: {
-          bsonType: "string",
-          enum: ["weight_loss", "muscle_gain", "endurance", "flexibility"],
-          description: "Цель тренировок — одно из допустимых значений"
-        },
-        createdAt: {
+        created_at: {
           bsonType: "date",
-          description: "Дата создания обязательна"
+          description: "Creation timestamp is required",
         },
-        updatedAt: {
-          bsonType: "date"
-        }
-      }
-    }
+      },
+    },
   },
-  validationLevel: "moderate",
-  validationAction: "error"
+  validationLevel: "strict",
+  validationAction: "error",
 });
+print("✓ Users validator applied");
 
-print("✅ Валидация users установлена");
-
-// ════════════════════════════════════════════════════════════════════
-// Валидация коллекции exercises
-// ════════════════════════════════════════════════════════════════════
-
+// ── Exercises валидация ───────────────────────────────────────────────────────
 db.runCommand({
   collMod: "exercises",
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["name", "category", "muscleGroups", "unit", "createdAt"],
+      required: ["name", "category", "muscle_groups", "difficulty", "created_at"],
       properties: {
         name: {
           bsonType: "string",
           minLength: 2,
-          maxLength: 200,
-          description: "Название упражнения обязательно"
+          maxLength: 100,
+          description: "Exercise name is required",
         },
         category: {
           bsonType: "string",
           enum: ["cardio", "strength", "flexibility", "balance"],
-          description: "Категория — одно из: cardio, strength, flexibility, balance"
+          description: "Must be one of: cardio, strength, flexibility, balance",
         },
-        muscleGroups: {
+        muscle_groups: {
           bsonType: "array",
           minItems: 1,
-          items: {
-            bsonType: "string"
-          },
-          description: "Минимум одна группа мышц"
+          items: { bsonType: "string" },
+          description: "At least one muscle group required",
         },
         description: {
+          bsonType: ["string", "null"],
+          maxLength: 500,
+        },
+        equipment: {
+          bsonType: ["string", "null"],
+          maxLength: 100,
+        },
+        difficulty: {
           bsonType: "string",
-          maxLength: 1000
+          enum: ["beginner", "intermediate", "advanced"],
+          description: "Must be one of: beginner, intermediate, advanced",
         },
-        unit: {
-          bsonType: "string",
-          enum: ["reps", "seconds", "meters"],
-          description: "Единица измерения: reps, seconds или meters"
+        created_at: {
+          bsonType: "date",
         },
-        defaultSets: {
-          bsonType: "int",
-          minimum: 1,
-          maximum: 20
-        },
-        defaultReps: {
-          bsonType: "int",
-          minimum: 1,
-          maximum: 1000
-        },
-        createdAt: {
-          bsonType: "date"
-        }
-      }
-    }
+      },
+    },
   },
-  validationLevel: "moderate",
-  validationAction: "error"
+  validationLevel: "strict",
+  validationAction: "error",
 });
+print("✓ Exercises validator applied");
 
-print("✅ Валидация exercises установлена");
-
-// ════════════════════════════════════════════════════════════════════
-// Валидация коллекции workouts
-// ════════════════════════════════════════════════════════════════════
-
+// ── Workouts валидация ────────────────────────────────────────────────────────
 db.runCommand({
   collMod: "workouts",
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["userId", "title", "date", "exercises", "createdAt"],
+      required: ["user_id", "title", "date", "duration_minutes", "exercises"],
       properties: {
-        userId: {
+        user_id: {
           bsonType: "objectId",
-          description: "Ссылка на пользователя обязательна"
+          description: "Reference to user is required",
         },
         title: {
           bsonType: "string",
           minLength: 1,
           maxLength: 200,
-          description: "Название тренировки обязательно"
         },
         date: {
           bsonType: "date",
-          description: "Дата тренировки обязательна"
         },
-        durationMinutes: {
+        duration_minutes: {
           bsonType: "int",
           minimum: 1,
           maximum: 600,
-          description: "Длительность: от 1 до 600 минут"
+          description: "Duration must be between 1 and 600 minutes",
         },
         notes: {
-          bsonType: "string",
-          maxLength: 2000
+          bsonType: ["string", "null"],
+          maxLength: 1000,
         },
         exercises: {
           bsonType: "array",
-          minItems: 1,
-          description: "Минимум одно упражнение в тренировке",
           items: {
             bsonType: "object",
-            required: ["exerciseId", "sets", "completed"],
+            required: ["exercise_id", "exercise_name", "sets", "order"],
             properties: {
-              exerciseId: { bsonType: "objectId" },
-              sets: {
-                bsonType: "int",
-                minimum: 1,
-                maximum: 100
-              },
-              reps: {
-                bsonType: "int",
-                minimum: 0,
-                maximum: 10000
-              },
-              weight: {
-                bsonType: "double",
-                minimum: 0,
-                maximum: 1000
-              },
-              duration: {
-                bsonType: "int",
-                minimum: 0
-              },
-              distance: {
-                bsonType: "double",
-                minimum: 0
-              },
-              completed: {
-                bsonType: "bool"
-              }
-            }
-          }
+              exercise_id: { bsonType: "objectId" },
+              exercise_name: { bsonType: "string", minLength: 1 },
+              sets: { bsonType: "int", minimum: 1, maximum: 100 },
+              reps: { bsonType: ["int", "null"], minimum: 1 },
+              weight_kg: { bsonType: ["double", "null"], minimum: 0 },
+              duration_seconds: { bsonType: ["int", "null"], minimum: 1 },
+              order: { bsonType: "int", minimum: 1 },
+            },
+          },
         },
-        totalCaloriesBurned: {
-          bsonType: "int",
-          minimum: 0,
-          maximum: 10000
+        created_at: {
+          bsonType: "date",
         },
-        heartRateAvg: {
-          bsonType: "int",
-          minimum: 30,
-          maximum: 250
-        },
-        createdAt: {
-          bsonType: "date"
-        }
-      }
-    }
+      },
+    },
   },
-  validationLevel: "moderate",
-  validationAction: "error"
+  validationLevel: "strict",
+  validationAction: "error",
 });
+print("✓ Workouts validator applied");
 
-print("✅ Валидация workouts установлена");
+// ═══════════════════════════════════════════════════════════════════════════════
+// ТЕСТЫ ВАЛИДАЦИИ
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════════════════════
-// Тесты валидации — вставка невалидных данных (должна вызвать ошибку)
-// ════════════════════════════════════════════════════════════════════
+print("\n--- Testing validation ---");
 
-print("\n--- Тестирование валидации ---");
-
-// Тест 1: Неверный email
+// ❌ Тест 1: Невалидный login (содержит заглавные буквы)
 try {
   db.users.insertOne({
-    login: "test_user",
-    firstName: "Тест",
-    lastName: "Тестов",
-    email: "not-an-email",  // ❌ Неверный формат
-    passwordHash: "$2b$10$testhash123",
-    goal: "endurance",
-    createdAt: new Date()
+    login: "BadLogin",   // нарушение pattern ^[a-z0-9_]+$
+    first_name: "Test",
+    last_name: "User",
+    email: "test@test.com",
+    age: 25,
+    created_at: new Date(),
   });
-  print("❌ Тест 1 ПРОВАЛЕН: вставка прошла, должна была упасть");
+  print("FAIL: Should have rejected uppercase login");
 } catch (e) {
-  print("✅ Тест 1 ПРОШЁЛ: невалидный email отклонён — " + e.message.slice(0, 60));
+  print("✓ Correctly rejected invalid login: " + e.message.substring(0, 80));
 }
 
-// Тест 2: Неверная цель (goal)
+// ❌ Тест 2: Возраст вне допустимого диапазона
 try {
   db.users.insertOne({
-    login: "test_user2",
-    firstName: "Тест",
-    lastName: "Два",
-    email: "test2@example.com",
-    passwordHash: "$2b$10$testhash456",
-    goal: "flying",  // ❌ Не из enum
-    createdAt: new Date()
+    login: "valid_login",
+    first_name: "Test",
+    last_name: "User",
+    email: "test@test.com",
+    age: 5,   // minimum = 10
+    created_at: new Date(),
   });
-  print("❌ Тест 2 ПРОВАЛЕН");
+  print("FAIL: Should have rejected age < 10");
 } catch (e) {
-  print("✅ Тест 2 ПРОШЁЛ: неверная цель отклонена — " + e.message.slice(0, 60));
+  print("✓ Correctly rejected age < 10: " + e.message.substring(0, 80));
 }
 
-// Тест 3: Возраст вне диапазона
-try {
-  db.users.insertOne({
-    login: "test_user3",
-    firstName: "Тест",
-    lastName: "Три",
-    email: "test3@example.com",
-    passwordHash: "$2b$10$testhash789",
-    age: 5,  // ❌ Меньше 10
-    goal: "endurance",
-    createdAt: new Date()
-  });
-  print("❌ Тест 3 ПРОВАЛЕН");
-} catch (e) {
-  print("✅ Тест 3 ПРОШЁЛ: недопустимый возраст отклонён — " + e.message.slice(0, 60));
-}
-
-// Тест 4: Упражнение без обязательного поля
+// ❌ Тест 3: Неверная категория упражнения
 try {
   db.exercises.insertOne({
-    name: "Тестовое упражнение",
-    // ❌ Отсутствует category, muscleGroups, unit
-    createdAt: new Date()
+    name: "Invalid Exercise",
+    category: "unknown",   // не в enum
+    muscle_groups: ["arms"],
+    difficulty: "beginner",
+    created_at: new Date(),
   });
-  print("❌ Тест 4 ПРОВАЛЕН");
+  print("FAIL: Should have rejected unknown category");
 } catch (e) {
-  print("✅ Тест 4 ПРОШЁЛ: отсутствующие поля отклонены — " + e.message.slice(0, 60));
+  print("✓ Correctly rejected unknown category: " + e.message.substring(0, 80));
 }
 
-// Тест 5: Тренировка с пустым массивом упражнений
+// ❌ Тест 4: Тренировка без обязательного поля title
 try {
   db.workouts.insertOne({
-    userId: new ObjectId(),
-    title: "Пустая тренировка",
+    user_id: db.users.findOne()._id,
     date: new Date(),
-    exercises: [],  // ❌ Минимум 1 упражнение
-    createdAt: new Date()
+    duration_minutes: 30,
+    exercises: [],
+    created_at: new Date(),
   });
-  print("❌ Тест 5 ПРОВАЛЕН");
+  print("FAIL: Should have rejected missing title");
 } catch (e) {
-  print("✅ Тест 5 ПРОШЁЛ: пустой массив упражнений отклонён — " + e.message.slice(0, 60));
+  print("✓ Correctly rejected missing title: " + e.message.substring(0, 80));
 }
 
-// Тест 6: Неверная категория упражнения
+// ✅ Тест 5: Валидная вставка
 try {
-  db.exercises.insertOne({
-    name: "Левитация",
-    category: "magic",  // ❌ Не из enum
-    muscleGroups: ["air"],
-    unit: "reps",
-    createdAt: new Date()
+  db.users.insertOne({
+    login: "valid_test_user",
+    first_name: "Valid",
+    last_name: "User",
+    email: "valid@test.com",
+    age: 25,
+    weight_kg: 70.0,
+    height_cm: 175,
+    created_at: new Date(),
   });
-  print("❌ Тест 6 ПРОВАЛЕН");
+  print("✓ Valid user inserted successfully");
+  db.users.deleteOne({ login: "valid_test_user" });
 } catch (e) {
-  print("✅ Тест 6 ПРОШЁЛ: неверная категория отклонена — " + e.message.slice(0, 60));
+  print("FAIL: Valid user was rejected: " + e.message);
 }
 
-print("\n✅ Тестирование валидации завершено!");
+print("\nValidation tests complete.");

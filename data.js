@@ -1,380 +1,398 @@
-// data.js — Тестовые данные для фитнес-трекера
+// data.js — Тестовые данные для Fitness Tracker
 // Запуск: mongosh fitness_tracker data.js
 
-// ─── Очистка ────────────────────────────────────────────────────────────────
+// ── Очистка ──────────────────────────────────────────────────────────────────
 db.users.drop();
 db.exercises.drop();
 db.workouts.drop();
 
-// ─── Упражнения (справочник) ─────────────────────────────────────────────────
-db.exercises.insertMany([
+// ── Users (10 документов) ────────────────────────────────────────────────────
+const usersResult = db.users.insertMany([
   {
-    name: "Приседания",
-    category: "strength",
-    muscleGroups: ["quadriceps", "glutes", "hamstrings"],
-    description: "Базовое упражнение для нижней части тела",
-    unit: "reps",
-    defaultSets: 4,
-    defaultReps: 12,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Жим лёжа",
-    category: "strength",
-    muscleGroups: ["chest", "triceps", "shoulders"],
-    description: "Базовое упражнение для верхней части тела",
-    unit: "reps",
-    defaultSets: 4,
-    defaultReps: 8,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Подтягивания",
-    category: "strength",
-    muscleGroups: ["back", "biceps"],
-    description: "Упражнение с собственным весом для спины",
-    unit: "reps",
-    defaultSets: 3,
-    defaultReps: 10,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Бег",
-    category: "cardio",
-    muscleGroups: ["legs", "core"],
-    description: "Кардио нагрузка, улучшает выносливость",
-    unit: "meters",
-    defaultSets: 1,
-    defaultReps: 1,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Планка",
-    category: "strength",
-    muscleGroups: ["core", "shoulders"],
-    description: "Статическое упражнение для укрепления кора",
-    unit: "seconds",
-    defaultSets: 3,
-    defaultReps: 1,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Становая тяга",
-    category: "strength",
-    muscleGroups: ["back", "glutes", "hamstrings"],
-    description: "Комплексное базовое упражнение",
-    unit: "reps",
-    defaultSets: 4,
-    defaultReps: 6,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Велотренажёр",
-    category: "cardio",
-    muscleGroups: ["legs", "core"],
-    description: "Кардио нагрузка с низкой ударной нагрузкой",
-    unit: "seconds",
-    defaultSets: 1,
-    defaultReps: 1,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Отжимания",
-    category: "strength",
-    muscleGroups: ["chest", "triceps", "shoulders"],
-    description: "Упражнение с собственным весом для груди",
-    unit: "reps",
-    defaultSets: 3,
-    defaultReps: 15,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Выпады",
-    category: "strength",
-    muscleGroups: ["quadriceps", "glutes"],
-    description: "Упражнение для ног и ягодиц",
-    unit: "reps",
-    defaultSets: 3,
-    defaultReps: 12,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Растяжка хамстрингов",
-    category: "flexibility",
-    muscleGroups: ["hamstrings"],
-    description: "Статическая растяжка задней поверхности бедра",
-    unit: "seconds",
-    defaultSets: 2,
-    defaultReps: 1,
-    createdAt: new Date("2024-01-01")
-  },
-  {
-    name: "Скручивания",
-    category: "strength",
-    muscleGroups: ["core", "abs"],
-    description: "Упражнение для пресса",
-    unit: "reps",
-    defaultSets: 3,
-    defaultReps: 20,
-    createdAt: new Date("2024-01-01")
-  }
-]);
-
-print("✅ Упражнения добавлены: " + db.exercises.countDocuments());
-
-// ─── Получаем ID упражнений ──────────────────────────────────────────────────
-const squat      = db.exercises.findOne({ name: "Приседания" })._id;
-const benchPress = db.exercises.findOne({ name: "Жим лёжа" })._id;
-const pullUp     = db.exercises.findOne({ name: "Подтягивания" })._id;
-const running    = db.exercises.findOne({ name: "Бег" })._id;
-const plank      = db.exercises.findOne({ name: "Планка" })._id;
-const deadlift   = db.exercises.findOne({ name: "Становая тяга" })._id;
-const bike       = db.exercises.findOne({ name: "Велотренажёр" })._id;
-const pushUp     = db.exercises.findOne({ name: "Отжимания" })._id;
-const lunges     = db.exercises.findOne({ name: "Выпады" })._id;
-
-// ─── Пользователи ────────────────────────────────────────────────────────────
-db.users.insertMany([
-  {
-    login: "ivan_petrov",
-    firstName: "Иван",
-    lastName: "Петров",
-    email: "ivan.petrov@example.com",
-    passwordHash: "$2b$10$examplehash1",
+    login: "john_doe",
+    first_name: "John",
+    last_name: "Doe",
+    email: "john.doe@example.com",
     age: 28,
-    weight: 80,
-    height: 180,
-    goal: "muscle_gain",
-    createdAt: new Date("2024-01-15"),
-    updatedAt: new Date("2024-01-15")
+    weight_kg: 82.5,
+    height_cm: 180,
+    created_at: new Date("2024-01-15"),
   },
   {
-    login: "maria_sidorova",
-    firstName: "Мария",
-    lastName: "Сидорова",
-    email: "maria.s@example.com",
-    passwordHash: "$2b$10$examplehash2",
-    age: 24,
-    weight: 58,
-    height: 165,
-    goal: "weight_loss",
-    createdAt: new Date("2024-02-01"),
-    updatedAt: new Date("2024-02-01")
+    login: "jane_smith",
+    first_name: "Jane",
+    last_name: "Smith",
+    email: "jane.smith@example.com",
+    age: 25,
+    weight_kg: 62.0,
+    height_cm: 165,
+    created_at: new Date("2024-02-01"),
   },
   {
-    login: "alexey_k",
-    firstName: "Алексей",
-    lastName: "Козлов",
-    email: "alexey.k@example.com",
-    passwordHash: "$2b$10$examplehash3",
+    login: "alex_johnson",
+    first_name: "Alex",
+    last_name: "Johnson",
+    email: "alex.j@example.com",
     age: 35,
-    weight: 90,
-    height: 185,
-    goal: "endurance",
-    createdAt: new Date("2024-01-20"),
-    updatedAt: new Date("2024-01-20")
+    weight_kg: 90.0,
+    height_cm: 178,
+    created_at: new Date("2024-02-10"),
   },
   {
-    login: "elena_nova",
-    firstName: "Елена",
-    lastName: "Новикова",
-    email: "elena.nova@example.com",
-    passwordHash: "$2b$10$examplehash4",
+    login: "maria_garcia",
+    first_name: "Maria",
+    last_name: "Garcia",
+    email: "maria.garcia@example.com",
     age: 30,
-    weight: 65,
-    height: 170,
-    goal: "flexibility",
-    createdAt: new Date("2024-03-01"),
-    updatedAt: new Date("2024-03-01")
+    weight_kg: 58.5,
+    height_cm: 160,
+    created_at: new Date("2024-02-20"),
   },
   {
-    login: "dmitry_vol",
-    firstName: "Дмитрий",
-    lastName: "Волков",
-    email: "dmitry.vol@example.com",
-    passwordHash: "$2b$10$examplehash5",
+    login: "mike_brown",
+    first_name: "Mike",
+    last_name: "Brown",
+    email: "mike.brown@example.com",
+    age: 40,
+    weight_kg: 95.0,
+    height_cm: 182,
+    created_at: new Date("2024-03-01"),
+  },
+  {
+    login: "sara_wilson",
+    first_name: "Sara",
+    last_name: "Wilson",
+    email: "sara.wilson@example.com",
     age: 22,
-    weight: 70,
-    height: 175,
-    goal: "muscle_gain",
-    createdAt: new Date("2024-02-10"),
-    updatedAt: new Date("2024-02-10")
-  }
+    weight_kg: 55.0,
+    height_cm: 162,
+    created_at: new Date("2024-03-05"),
+  },
+  {
+    login: "david_lee",
+    first_name: "David",
+    last_name: "Lee",
+    email: "david.lee@example.com",
+    age: 33,
+    weight_kg: 75.0,
+    height_cm: 175,
+    created_at: new Date("2024-03-10"),
+  },
+  {
+    login: "emily_clark",
+    first_name: "Emily",
+    last_name: "Clark",
+    email: "emily.clark@example.com",
+    age: 27,
+    weight_kg: 60.0,
+    height_cm: 168,
+    created_at: new Date("2024-03-15"),
+  },
+  {
+    login: "chris_martin",
+    first_name: "Chris",
+    last_name: "Martin",
+    email: "chris.martin@example.com",
+    age: 31,
+    weight_kg: 78.0,
+    height_cm: 176,
+    created_at: new Date("2024-03-20"),
+  },
+  {
+    login: "anna_taylor",
+    first_name: "Anna",
+    last_name: "Taylor",
+    email: "anna.taylor@example.com",
+    age: 29,
+    weight_kg: 65.0,
+    height_cm: 170,
+    created_at: new Date("2024-03-25"),
+  },
 ]);
 
-print("✅ Пользователи добавлены: " + db.users.countDocuments());
+const users = db.users.find().toArray();
+print(`Inserted ${users.length} users`);
 
-// ─── Получаем ID пользователей ───────────────────────────────────────────────
-const user1 = db.users.findOne({ login: "ivan_petrov" })._id;
-const user2 = db.users.findOne({ login: "maria_sidorova" })._id;
-const user3 = db.users.findOne({ login: "alexey_k" })._id;
-const user4 = db.users.findOne({ login: "elena_nova" })._id;
-const user5 = db.users.findOne({ login: "dmitry_vol" })._id;
+// ── Exercises (12 документов) ─────────────────────────────────────────────────
+const exercisesResult = db.exercises.insertMany([
+  {
+    name: "Barbell Squat",
+    category: "strength",
+    muscle_groups: ["quadriceps", "hamstrings", "glutes", "core"],
+    description: "Classic compound lower body exercise with a barbell on the back.",
+    equipment: "barbell",
+    difficulty: "intermediate",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Push-Up",
+    category: "strength",
+    muscle_groups: ["chest", "triceps", "shoulders", "core"],
+    description: "Bodyweight exercise targeting the upper body.",
+    equipment: "none",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Running",
+    category: "cardio",
+    muscle_groups: ["legs", "core"],
+    description: "Continuous aerobic activity on treadmill or outdoors.",
+    equipment: "none",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Deadlift",
+    category: "strength",
+    muscle_groups: ["hamstrings", "glutes", "back", "core"],
+    description: "Compound hip-hinge movement lifting a barbell from the floor.",
+    equipment: "barbell",
+    difficulty: "advanced",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Pull-Up",
+    category: "strength",
+    muscle_groups: ["back", "biceps", "core"],
+    description: "Bodyweight vertical pulling exercise.",
+    equipment: "pull-up bar",
+    difficulty: "intermediate",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Plank",
+    category: "strength",
+    muscle_groups: ["core", "shoulders"],
+    description: "Isometric core strengthening exercise.",
+    equipment: "none",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Cycling",
+    category: "cardio",
+    muscle_groups: ["legs", "glutes"],
+    description: "Aerobic exercise on a stationary or outdoor bike.",
+    equipment: "bike",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Bench Press",
+    category: "strength",
+    muscle_groups: ["chest", "triceps", "shoulders"],
+    description: "Compound upper body pressing exercise on a flat bench.",
+    equipment: "barbell",
+    difficulty: "intermediate",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Yoga Flow",
+    category: "flexibility",
+    muscle_groups: ["full body"],
+    description: "Dynamic sequence of yoga poses for flexibility and mindfulness.",
+    equipment: "yoga mat",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Lunges",
+    category: "strength",
+    muscle_groups: ["quadriceps", "hamstrings", "glutes"],
+    description: "Unilateral lower body exercise stepping forward or backward.",
+    equipment: "none",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Rowing",
+    category: "cardio",
+    muscle_groups: ["back", "arms", "legs", "core"],
+    description: "Full-body cardio on a rowing machine.",
+    equipment: "rowing machine",
+    difficulty: "intermediate",
+    created_at: new Date("2024-01-01"),
+  },
+  {
+    name: "Single-Leg Balance",
+    category: "balance",
+    muscle_groups: ["legs", "core"],
+    description: "Standing on one leg to improve proprioception and stability.",
+    equipment: "none",
+    difficulty: "beginner",
+    created_at: new Date("2024-01-01"),
+  },
+]);
 
-// ─── Тренировки ──────────────────────────────────────────────────────────────
+const exercises = db.exercises.find().toArray();
+print(`Inserted ${exercises.length} exercises`);
+
+// Helpers — получаем ObjectId по имени
+function exId(name) {
+  return db.exercises.findOne({ name })._id;
+}
+function userId(login) {
+  return db.users.findOne({ login })._id;
+}
+
+// ── Workouts (12 документов) ──────────────────────────────────────────────────
 db.workouts.insertMany([
-  // Иван — тренировки на силу
   {
-    userId: user1,
-    title: "Грудь и трицепс",
-    date: new Date("2024-03-01"),
-    durationMinutes: 60,
-    notes: "Хорошая тренировка, добавил вес на жиме",
+    user_id: userId("john_doe"),
+    title: "Leg Day",
+    date: new Date("2024-04-01"),
+    duration_minutes: 60,
+    notes: "Felt strong today",
     exercises: [
-      { exerciseId: benchPress, sets: 4, reps: 8, weight: 80, completed: true },
-      { exerciseId: pushUp, sets: 3, reps: 20, weight: 0, completed: true },
-      { exerciseId: plank, sets: 3, reps: 1, duration: 60, completed: true }
+      { exercise_id: exId("Barbell Squat"), exercise_name: "Barbell Squat", sets: 4, reps: 8, weight_kg: 100, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Lunges"),        exercise_name: "Lunges",        sets: 3, reps: 12, weight_kg: 20,  duration_seconds: null, order: 2 },
     ],
-    totalCaloriesBurned: 350,
-    heartRateAvg: 130,
-    createdAt: new Date("2024-03-01")
+    created_at: new Date(),
   },
   {
-    userId: user1,
-    title: "Ноги",
-    date: new Date("2024-03-04"),
-    durationMinutes: 75,
-    notes: "Тяжёлые приседания, хорошее ощущение",
+    user_id: userId("john_doe"),
+    title: "Push Day",
+    date: new Date("2024-04-03"),
+    duration_minutes: 50,
+    notes: "Increased bench weight",
     exercises: [
-      { exerciseId: squat, sets: 4, reps: 10, weight: 100, completed: true },
-      { exerciseId: deadlift, sets: 4, reps: 6, weight: 120, completed: true },
-      { exerciseId: lunges, sets: 3, reps: 12, weight: 20, completed: false }
+      { exercise_id: exId("Bench Press"), exercise_name: "Bench Press", sets: 4, reps: 6,  weight_kg: 90, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Push-Up"),     exercise_name: "Push-Up",     sets: 3, reps: 20, weight_kg: 0,  duration_seconds: null, order: 2 },
     ],
-    totalCaloriesBurned: 500,
-    heartRateAvg: 145,
-    createdAt: new Date("2024-03-04")
+    created_at: new Date(),
   },
   {
-    userId: user1,
-    title: "Спина и бицепс",
-    date: new Date("2024-03-07"),
-    durationMinutes: 55,
+    user_id: userId("john_doe"),
+    title: "Cardio Session",
+    date: new Date("2024-04-05"),
+    duration_minutes: 35,
+    notes: "Morning run",
     exercises: [
-      { exerciseId: pullUp, sets: 4, reps: 8, weight: 0, completed: true },
-      { exerciseId: deadlift, sets: 3, reps: 5, weight: 130, completed: true }
+      { exercise_id: exId("Running"), exercise_name: "Running", sets: 1, reps: null, weight_kg: null, duration_seconds: 2100, order: 1 },
     ],
-    totalCaloriesBurned: 380,
-    heartRateAvg: 135,
-    createdAt: new Date("2024-03-07")
-  },
-  // Мария — кардио и похудение
-  {
-    userId: user2,
-    title: "Утренняя пробежка",
-    date: new Date("2024-03-02"),
-    durationMinutes: 40,
-    notes: "5 км за 28 минут",
-    exercises: [
-      { exerciseId: running, sets: 1, reps: 1, distance: 5000, completed: true }
-    ],
-    totalCaloriesBurned: 280,
-    heartRateAvg: 155,
-    createdAt: new Date("2024-03-02")
+    created_at: new Date(),
   },
   {
-    userId: user2,
-    title: "Кардио + пресс",
-    date: new Date("2024-03-05"),
-    durationMinutes: 50,
+    user_id: userId("jane_smith"),
+    title: "Full Body Strength",
+    date: new Date("2024-04-02"),
+    duration_minutes: 55,
+    notes: "Great session",
     exercises: [
-      { exerciseId: bike, sets: 1, reps: 1, duration: 1800, completed: true },
-      { exerciseId: plank, sets: 3, reps: 1, duration: 45, completed: true }
+      { exercise_id: exId("Deadlift"),  exercise_name: "Deadlift",  sets: 3, reps: 5,  weight_kg: 70, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Pull-Up"),   exercise_name: "Pull-Up",   sets: 3, reps: 8,  weight_kg: 0,  duration_seconds: null, order: 2 },
+      { exercise_id: exId("Plank"),     exercise_name: "Plank",     sets: 3, reps: null, weight_kg: null, duration_seconds: 60, order: 3 },
     ],
-    totalCaloriesBurned: 320,
-    heartRateAvg: 148,
-    createdAt: new Date("2024-03-05")
-  },
-  // Алексей — выносливость
-  {
-    userId: user3,
-    title: "Длинная пробежка",
-    date: new Date("2024-03-01"),
-    durationMinutes: 90,
-    notes: "10 км в умеренном темпе",
-    exercises: [
-      { exerciseId: running, sets: 1, reps: 1, distance: 10000, completed: true }
-    ],
-    totalCaloriesBurned: 700,
-    heartRateAvg: 160,
-    createdAt: new Date("2024-03-01")
+    created_at: new Date(),
   },
   {
-    userId: user3,
-    title: "Велотренировка",
-    date: new Date("2024-03-03"),
-    durationMinutes: 60,
+    user_id: userId("jane_smith"),
+    title: "Yoga & Flexibility",
+    date: new Date("2024-04-06"),
+    duration_minutes: 45,
+    notes: "Recovery day",
     exercises: [
-      { exerciseId: bike, sets: 1, reps: 1, duration: 3600, completed: true }
+      { exercise_id: exId("Yoga Flow"), exercise_name: "Yoga Flow", sets: 1, reps: null, weight_kg: null, duration_seconds: 2700, order: 1 },
     ],
-    totalCaloriesBurned: 450,
-    heartRateAvg: 145,
-    createdAt: new Date("2024-03-03")
-  },
-  // Елена — гибкость
-  {
-    userId: user4,
-    title: "Растяжка и йога",
-    date: new Date("2024-03-02"),
-    durationMinutes: 45,
-    exercises: [
-      { exerciseId: plank, sets: 2, reps: 1, duration: 30, completed: true }
-    ],
-    totalCaloriesBurned: 120,
-    heartRateAvg: 90,
-    createdAt: new Date("2024-03-02")
-  },
-  // Дмитрий — начинающий
-  {
-    userId: user5,
-    title: "Первая тренировка",
-    date: new Date("2024-03-01"),
-    durationMinutes: 30,
-    notes: "Начало пути!",
-    exercises: [
-      { exerciseId: pushUp, sets: 3, reps: 10, weight: 0, completed: true },
-      { exerciseId: squat, sets: 3, reps: 15, weight: 0, completed: true }
-    ],
-    totalCaloriesBurned: 200,
-    heartRateAvg: 125,
-    createdAt: new Date("2024-03-01")
+    created_at: new Date(),
   },
   {
-    userId: user5,
-    title: "Тренировка 2",
-    date: new Date("2024-03-04"),
-    durationMinutes: 35,
+    user_id: userId("alex_johnson"),
+    title: "Heavy Lifting",
+    date: new Date("2024-04-01"),
+    duration_minutes: 75,
+    notes: "PR on deadlift",
     exercises: [
-      { exerciseId: pushUp, sets: 3, reps: 12, weight: 0, completed: true },
-      { exerciseId: plank, sets: 3, reps: 1, duration: 40, completed: true },
-      { exerciseId: lunges, sets: 3, reps: 10, weight: 0, completed: true }
+      { exercise_id: exId("Deadlift"),      exercise_name: "Deadlift",      sets: 5, reps: 3, weight_kg: 140, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Barbell Squat"), exercise_name: "Barbell Squat", sets: 4, reps: 5, weight_kg: 120, duration_seconds: null, order: 2 },
     ],
-    totalCaloriesBurned: 230,
-    heartRateAvg: 128,
-    createdAt: new Date("2024-03-04")
+    created_at: new Date(),
   },
   {
-    userId: user1,
-    title: "Ноги (повтор)",
-    date: new Date("2024-03-11"),
-    durationMinutes: 80,
+    user_id: userId("alex_johnson"),
+    title: "Cardio & Core",
+    date: new Date("2024-04-04"),
+    duration_minutes: 40,
+    notes: "",
     exercises: [
-      { exerciseId: squat, sets: 5, reps: 8, weight: 105, completed: true },
-      { exerciseId: deadlift, sets: 4, reps: 5, weight: 125, completed: true }
+      { exercise_id: exId("Rowing"),  exercise_name: "Rowing",  sets: 1, reps: null, weight_kg: null, duration_seconds: 1200, order: 1 },
+      { exercise_id: exId("Plank"),   exercise_name: "Plank",   sets: 4, reps: null, weight_kg: null, duration_seconds: 90,   order: 2 },
     ],
-    totalCaloriesBurned: 520,
-    heartRateAvg: 150,
-    createdAt: new Date("2024-03-11")
-  }
+    created_at: new Date(),
+  },
+  {
+    user_id: userId("maria_garcia"),
+    title: "Morning Cardio",
+    date: new Date("2024-04-02"),
+    duration_minutes: 30,
+    notes: "Easy pace",
+    exercises: [
+      { exercise_id: exId("Cycling"), exercise_name: "Cycling", sets: 1, reps: null, weight_kg: null, duration_seconds: 1800, order: 1 },
+    ],
+    created_at: new Date(),
+  },
+  {
+    user_id: userId("maria_garcia"),
+    title: "Balance & Core",
+    date: new Date("2024-04-07"),
+    duration_minutes: 25,
+    notes: "",
+    exercises: [
+      { exercise_id: exId("Single-Leg Balance"), exercise_name: "Single-Leg Balance", sets: 3, reps: null, weight_kg: null, duration_seconds: 60, order: 1 },
+      { exercise_id: exId("Plank"),              exercise_name: "Plank",              sets: 3, reps: null, weight_kg: null, duration_seconds: 45, order: 2 },
+    ],
+    created_at: new Date(),
+  },
+  {
+    user_id: userId("mike_brown"),
+    title: "Upper Body Power",
+    date: new Date("2024-04-01"),
+    duration_minutes: 65,
+    notes: "Focus on form",
+    exercises: [
+      { exercise_id: exId("Bench Press"), exercise_name: "Bench Press", sets: 5, reps: 5,  weight_kg: 110, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Pull-Up"),     exercise_name: "Pull-Up",     sets: 4, reps: 10, weight_kg: 10,  duration_seconds: null, order: 2 },
+      { exercise_id: exId("Push-Up"),     exercise_name: "Push-Up",     sets: 3, reps: 25, weight_kg: 0,   duration_seconds: null, order: 3 },
+    ],
+    created_at: new Date(),
+  },
+  {
+    user_id: userId("sara_wilson"),
+    title: "Beginner Strength",
+    date: new Date("2024-04-03"),
+    duration_minutes: 40,
+    notes: "First strength session",
+    exercises: [
+      { exercise_id: exId("Push-Up"), exercise_name: "Push-Up", sets: 3, reps: 10, weight_kg: 0, duration_seconds: null, order: 1 },
+      { exercise_id: exId("Lunges"),  exercise_name: "Lunges",  sets: 3, reps: 10, weight_kg: 0, duration_seconds: null, order: 2 },
+      { exercise_id: exId("Plank"),   exercise_name: "Plank",   sets: 3, reps: null, weight_kg: null, duration_seconds: 30, order: 3 },
+    ],
+    created_at: new Date(),
+  },
+  {
+    user_id: userId("david_lee"),
+    title: "Rowing + Core",
+    date: new Date("2024-04-05"),
+    duration_minutes: 50,
+    notes: "Tough session",
+    exercises: [
+      { exercise_id: exId("Rowing"), exercise_name: "Rowing", sets: 3, reps: null, weight_kg: null, duration_seconds: 600, order: 1 },
+      { exercise_id: exId("Plank"),  exercise_name: "Plank",  sets: 4, reps: null, weight_kg: null, duration_seconds: 60,  order: 2 },
+    ],
+    created_at: new Date(),
+  },
 ]);
 
-print("✅ Тренировки добавлены: " + db.workouts.countDocuments());
+print(`Inserted ${db.workouts.countDocuments()} workouts`);
 
-// ─── Индексы ─────────────────────────────────────────────────────────────────
+// ── Индексы ───────────────────────────────────────────────────────────────────
 db.users.createIndex({ login: 1 }, { unique: true });
-db.users.createIndex({ firstName: 1, lastName: 1 });
+db.users.createIndex({ first_name: 1, last_name: 1 });
 db.exercises.createIndex({ name: 1 }, { unique: true });
 db.exercises.createIndex({ category: 1 });
-db.workouts.createIndex({ userId: 1, date: -1 });
+db.workouts.createIndex({ user_id: 1 });
+db.workouts.createIndex({ user_id: 1, date: -1 });
+db.workouts.createIndex({ date: 1 });
 
-print("✅ Индексы созданы");
-print("\n🎉 База данных успешно инициализирована!");
+print("Indexes created. Data load complete.");
